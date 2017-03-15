@@ -5,6 +5,19 @@
     <title></title>
   </head>
   <body>
-
+	<canvas>
+		<script>
+			var eCanvas = document.getElementsByTagName("Canvas")[0];
+			var ctx = eCanvas.getContext("2d");
+			
+			ctx.fillText("Teste",10,10);
+			ctx.fillStyle = "YELLOW";
+			ctx.fillRect(10,10,40,40);
+			ctx.strokeRect(10,10,40,40);
+			ctx.fillStyle = "red";
+			ctx.fillRect(100,10,40,40);
+			ctx.strokeRect(100,10,40,40);
+		</script>
+	</canvas>
   </body>
 </html>
