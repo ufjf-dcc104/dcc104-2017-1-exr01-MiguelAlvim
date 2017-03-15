@@ -9,25 +9,40 @@
 		<script>
 			var eCanvas = document.getElementsByTagName("Canvas")[0];
 			var ctx = eCanvas.getContext("2d");
-			var pos1 = {px:10,py:15,sx:40,sy:40};
+			var pos1 = {px:10,py:30,sx:40,sy:40};
+			
+			var dateActual = new Date();
+			var dateBefore = new Date();
+			
 			var fps = 60;
 			var deltaTime = 1/fps;
-			var speed = (1/10)*1000/fps;//1000 = 1 sec
-
 			
-			setInterval(desenha,speed);
+			draw();
 			
-			function desenha(){
-				clean();
+			function draw(){
+				requestAnimationFrame(draw);
+				dateBefore = dateActual;
+				dateActual = new Date();
+				deltaTime = (dateActual - dateBefore)/1000;
+				
+				cleanCanvas();
+				drawBoundryBox();
+				
 				ctx.fillStyle = "BLACK";
-				ctx.fillText("X: "+pos1.px,100,10);
+				ctx.fillText("X: "+pos1.px,100,9);
+				ctx.fillText("DT: "+deltaTime+" ms",100,19);
+				ctx.fillText("FPS: "+1/deltaTime,100,29);
 				pos1.px += 10*deltaTime;
 				ctx.fillStyle = "RED";
 				ctx.fillRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
 				ctx.strokeRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
 			}
 			
-			function clean(){
+			function drawBoundryBox(){			
+				ctx.strokeRect(0,0,eCanvas.width-1,eCanvas.height-1);
+			}
+			
+			function cleanCanvas(){
 				ctx.clearRect(0,0,eCanvas.width,eCanvas.height)
 			}
 			
