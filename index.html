@@ -9,14 +9,28 @@
 		<script>
 			var eCanvas = document.getElementsByTagName("Canvas")[0];
 			var ctx = eCanvas.getContext("2d");
+			var pos1 = {px:10,py:15,sx:40,sy:40};
+			var fps = 60;
+			var deltaTime = 1/fps;
+			var speed = (1/10)*1000/fps;//1000 = 1 sec
+
 			
-			ctx.fillText("Teste",10,10);
-			ctx.fillStyle = "YELLOW";
-			ctx.fillRect(10,10,40,40);
-			ctx.strokeRect(10,10,40,40);
-			ctx.fillStyle = "red";
-			ctx.fillRect(100,10,40,40);
-			ctx.strokeRect(100,10,40,40);
+			setInterval(desenha,speed);
+			
+			function desenha(){
+				clean();
+				ctx.fillStyle = "BLACK";
+				ctx.fillText("X: "+pos1.px,100,10);
+				pos1.px += 10*deltaTime;
+				ctx.fillStyle = "RED";
+				ctx.fillRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
+				ctx.strokeRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
+			}
+			
+			function clean(){
+				ctx.clearRect(0,0,eCanvas.width,eCanvas.height)
+			}
+			
 		</script>
 	</canvas>
   </body>
