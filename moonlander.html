@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Ex1</title>
+    <title>Moonlander</title>
 	<script src="sprite.js" charset="utf-8">	</script>
   </head>
   <body>
@@ -16,6 +16,7 @@
 			var dateBefore = new Date();
 			
 			var blue = new Sprite();
+			blue.gravity = 10;
 			
 			var fps = 60;
 			var deltaTime = 1/fps;
@@ -60,21 +61,21 @@
 			}
 			
 			addEventListener("keydown", function(e){
-				//console.log(e.keyCode);
+				console.log(e.keyCode);
 				switch(e.keyCode){
 					case 37:{//left
-						blue.accx +=-10;
+						blue.addXAcc(-100*deltaTime);
 					}break;
 					case 38:{//Up
-						blue.accy +=-10;
+						blue.addYAcc(-100*deltaTime);
 					}break;
 					
 					case 39:{//Right
-						blue.accx +=10;
+						blue.addXAcc(100*deltaTime);
 					}break;
 					
 					case 40:{//Down
-						blue.accy +=10;
+						blue.addYAcc(100*deltaTime);
 					}break;
 				}
 			});
