@@ -1,97 +1,332 @@
 function Sprite(){
-	this.x = 40;
-	this.y = 40;
+	//Bulding/Initial Variables
+	this.x = 600;
+	this.y = 100;
+	this.color = "blue";
+	
+	//Movement Variables
 	this.velx = 0;	
 	this.vely = 0;	
 	this.accx = 0;
 	this.accy = 0;
-	this.stopVel = 100;
-	this.accLimit = 50;
-	this.color = "blue";
-	this.gravity =0;
+	this.stopVelX = 5;
+	this.stopVelY = 5;
+	this.maxVel = 8;//Hard Coded maximum vel, Higher values will make collision detection imprecise. To fix, modify collision detection to also work with 2 time instances and verify if collision line was passed between them. I haven't done it as I didn't feel necessary
+	this.accNaturalLimit = 2;//Maximum allowed acc from friction
+	this.accCounterX=0;//Acceleration manipulated by the code only. It will stop the sprite naturally once standard acc reaches 0
+	this.accCounterY=0;//Acceleration manipulated by the code only. It will stop the sprite naturally once standard acc reaches 0
+	this.accGravityX =0;
+	this.accGravityY =0;
+	this.landingGearPos = new Array(2);
+		this.landingGearPos[0] = new Array(4);
+		this.landingGearPos[1] = new Array(4);
+	this.updateLandingGearPos();
+	
+	//Control Variables
+	this.rightMoveActivated=false;
+	this.leftMoveActivated=false;
+	this.upMoveActivated=false;
+	this.downMoveActivated=false;
+	this.collisionTolerance = 3;
+}
+//NOTES:
+/*	The move function is called every frame. 
+		Keydown is NOT called every frame. In 60FPS it were called from 16 to 20 times in the first seccond of pressing, with AVRG amount of 18 (in the majority of cases)
+		After 1 seccong, the ratio is 1 call every 2 frames.
+	The logic of friction is not a 1 - 1 scenario, as we have in avrg 3x more calls to desacelerate.
+		So, if you want a 10 pixels/sec acceleration, you need to make the acelleration calls on the main program around 2x as big, so instead of 10 you call 30
+	and expect a delay of 1 seccond for the expected results.
+*/
+Sprite.prototype.addACCX = function (val){//ADDS THE VALUE TO accx
+	this.accx +=val;
 }
 
-Sprite.prototype.addXAcc = function (val){
-	if(val > this.accLimit){
-		val = this.accLimit;
-	}
-	if(val < -this.accLimit && val <0){
-		val = -this.accLimit;
-	}
-	if(val<0){
-		if(this.accx <=0 && this.accx >-this.accLimit){
-			this.accx+=val;
-		}
-	}
-	if(val>0){
-		if(this.accx <=0 && this.accx >-this.accLimit){
-			this.accx+=val;
-		}
-	}
-	if(this.accx >=0 && this.accx <this.accLimit){
-		this.accx+=val;
-	}
-};
+Sprite.prototype.addACCY = function (val){//ADDS THE VALUE TO accy
+	this.accy +=val;
+}
 
-Sprite.prototype.addYAcc = function (val){
-	if(val > this.accLimit){
-		val = this.accLimit;
+Sprite.prototype.draw = function (ctx){//ALL THE DRAWING CALLS TO CREATE THE SHIP
+	//CREATING THE PROPULSION EFFECTS - THEY COME FIRST SO THAT THE SHIP IS DRAWN ABOVE THEM
+		//LATERAL THRUSTERS
+	if(this.leftMoveActivated){
+		//var grad = ctx.createLinearGradient(this.x+20,this.y+5,this.x+100,this.y+5);
+		//var grad = ctx.createRadialGradient(this.x+16,this.y+5,1,this.x+40,this.y+50,6);
+		var grad = ctx.createRadialGradient(this.x-86,this.y+10,1,this.x+10,this.y+30,100);
+		grad.addColorStop(0,"black");
+		grad.addColorStop(1,"white");
+		ctx.fillStyle = grad;
+		ctx.beginPath();
+			ctx.arc(this.x+15,this.y+10,4,1.5*Math.PI,0.5*Math.PI);
+		ctx.fill();
+	}	
+	if(this.rightMoveActivated){
+		var grad = ctx.createRadialGradient(this.x+86,this.y+10,1,this.x-10,this.y+30,100);
+		grad.addColorStop(0,"black");
+		grad.addColorStop(1,"white");
+		ctx.fillStyle = grad;
+		ctx.beginPath();
+			ctx.arc(this.x,this.y+10,4,0.5*Math.PI,1.5*Math.PI);
+		ctx.fill();
+	}	
+		//MAIN VERTICAL THRUSTER
+	if(this.upMoveActivated){
+		var grad = ctx.createLinearGradient(this.x+4,this.y+30,this.x+4,this.y+41);
+		//var grad = ctx.createRadialGradient(this.x+7,this.y+30,2,this.x+12,this.y+41,6);
+		grad.addColorStop(0,"red");
+		grad.addColorStop(0.5,"orange");
+		grad.addColorStop(1,"white");
+		ctx.fillStyle = grad;
+		ctx.fillRect(this.x+4,this.y+30,7,8);
 	}
-	if(val < -this.accLimit && val <0){
-		val = -this.accLimit;
-	}
-	if(val<0){
-		if(this.accy <=0 && this.accy >-this.accLimit){
-			this.accy+=val;
-		}
-	}
-	if(val>0){
-		if(this.accy <=0 && this.accy >-this.accLimit){
-			this.accy+=val;
-		}
-	}
-	if(this.accy >=0 && this.accy <this.accLimit){
-		this.accy+=val;
-	}
-};
-Sprite.prototype.draw = function (ctx){
-	ctx.fillColor = this.color;
-	ctx.fillRect(this.x,this.y,30,30);
+	
+	//CREATING THE MAIN SHAPE OF THE SHIP
+		//Main body
+	ctx.fillStyle = this.color;
 	ctx.strokeStyle = "black";
-	ctx.strokeRect(this.x,this.y,30,30);
+	ctx.fillRect(this.x,this.y,15,30);
+	ctx.strokeRect(this.x,this.y,15,30);
+	
+		//Main thruster
+	ctx.beginPath();
+		ctx.moveTo(this.x,this.y+30);
+		ctx.lineTo(this.x+5,this.y+30);
+		ctx.lineTo(this.x+5,this.y+30+5);
+		ctx.lineTo(this.x,this.y+30);
+	ctx.fill();
+	ctx.stroke(); 
+	
+	ctx.beginPath();
+		ctx.moveTo(this.x+15,this.y+30);
+		ctx.lineTo(this.x+10,this.y+35);
+		ctx.lineTo(this.x+10,this.y+30);
+		ctx.lineTo(this.x+15,this.y+30);
+	ctx.fill();
+	ctx.stroke(); 
+	
+		//Landing Gear
+	ctx.lineWidth=1.5;
+		ctx.beginPath();
+			ctx.moveTo(this.x,this.y+20);
+			ctx.lineTo(this.x-5,this.y+30);
+			ctx.lineTo(this.x-5,this.y+36);
+			ctx.lineTo(this.x-7,this.y+36);
+			ctx.lineTo(this.x-3,this.y+36);
+		ctx.stroke(); 
+		
+		ctx.beginPath();
+			ctx.moveTo(this.x+15,this.y+20);
+			ctx.lineTo(this.x+20,this.y+30);
+			ctx.lineTo(this.x+20,this.y+36);
+			ctx.lineTo(this.x+22,this.y+36);
+			ctx.lineTo(this.x+17,this.y+36);
+		ctx.stroke(); 
+	ctx.lineWidth=1;
+	
+		//Control Module
+	ctx.beginPath();
+		ctx.moveTo(this.x,this.y);
+		ctx.lineTo(this.x+7.5,this.y-8);
+		ctx.lineTo(this.x+15,this.y);
+		ctx.lineTo(this.x,this.y);
+	ctx.fill();
+	ctx.stroke(); 	
 };
 
-Sprite.prototype.friction = function (dt){
+Sprite.prototype.accLimiter = function (){//KEEPS THE ACCELERATION CREATED BY PLAYERS AND FRICTION IN THE LIMIT
+	if (this.accx >0 && this.accx > this.accNaturalLimit){
+		this.accx = this.accNaturalLimit;
+	}else if (this.accx <0 && this.accx < -this.accNaturalLimit){
+		this.accx = -this.accNaturalLimit;
+	}
 	
+	if (this.accy >0 && this.accy > this.accNaturalLimit){
+		this.accy = this.accNaturalLimit;
+	}else if (this.accy <0 && this.accy < -this.accNaturalLimit){
+		this.accy = -this.accNaturalLimit;
+	}
 }
 
-Sprite.prototype.move = function (dt){
-	if(this.accx >0){
-		this.accx -= this.stopVel;
-	}else if(this.accx < 0){
-		this.accx += this.stopVel;
+// FrictionA functions operate by looking at the acceleration of the object, reducing it to 0, but do not create oposite acc towards movement
+// FrictionB functions operate by looking at the velocity of the object, giving oposite acceleration towards its current movement direction.
+
+Sprite.prototype.frictionXB = function (dt){
+	if(Math.abs(this.accx == 0 && Math.abs(this.velx) != 0)){
+		if(this.accGravityX ==0){
+			this.accCounterX = -(this.velx*3);		
+			if(Math.abs(this.accCounterX)<0.001){
+				this.accCounterX =0;
+				this.velx=0;
+			}
+		}
+	}else{
+		this.accCounterX = 0;
 	}
-	if(this.accx >0 && this.accx < this.stopVel)
-		this.accx =0;
+}
+
+Sprite.prototype.frictionYB = function (dt){
+	if(Math.abs(this.accy == 0 && Math.abs(this.vely) != 0)){
+		if(this.accGravityY ==0){
+			this.accCounterY = -(this.vely)*3;		
+			if(Math.abs(this.accCounterX)<0.001){
+				this.accCounterY =0;
+				this.vely=0;
+			}
+		}
+	}else{
+		this.accCounterY = 0;
+	}
+}
+
+Sprite.prototype.frictionXA = function (dt){
+	//if(this.accx !=0)
+	//	console.log(this.accx);
+	if(this.accx > 0){
+		if(this.accx < this.stopVelX*dt){
+			this.accx = 0;
+		}else{
+			this.accx -= this.stopVelX*dt;
+		}
+	}
+	if(this.accx < 0){
+		if(this.accx > -this.stopVelX*dt){
+			this.accx = 0;
+		}else{
+			this.accx += this.stopVelX*dt;
+		}
+	}
+}
+
+Sprite.prototype.frictionYA= function (dt){
+	if(this.accy > 0){
+		if(this.accy < this.stopVelY*dt){
+			this.accy = 0;
+		}else{
+			this.accy -= this.stopVelY*dt;
+		}
+	}
+	if(this.accy < 0){
+		if(this.accy > -this.stopVelY*dt){
+			this.accy = 0;
+		}else{
+			this.accy += this.stopVelY*dt;
+		}
+	}
+}
+
+Sprite.prototype.updateLandingGearPos = function (){//UPDATES THE POSITIONS OF THE LANDING GEAR
+	this.landingGearPos[0][0] = this.x-7;
+	this.landingGearPos[0][1] = this.y+36;
+	this.landingGearPos[0][2] = this.x-3;
+	this.landingGearPos[0][3] = this.y+36;
 	
-	if(this.accy >0 && this.accy < this.stopVel)
-		this.accy =0;
-	
-	if(this.accx <0 && this.accx > this.stopVel)
-		this.accx =0;
-	
-	if(this.accy <0 && this.accy > this.stopVel)
-		this.accy =0;
-	
-	if(this.accy >0){
-		this.accy -= this.stopVel*dt;
-	}else if(this.accy < 0){
-		this.accy += this.stopVel*dt;
+	this.landingGearPos[1][0] = this.x+22;
+	this.landingGearPos[1][1] = this.y+36;
+	this.landingGearPos[1][2] = this.x+17;
+	this.landingGearPos[1][3] = this.y+36;
+}
+
+Sprite.prototype.touchLandingGearPoint = function (xVal,yVal){//VERIFIES IF POINT IS TOUCHING THE LANDING GEAR
+	var pos = this.landingGearPos;
+	if( xVal-pos[0][0] >= 0 && xVal-pos[0][2] <= pos[0][0]-pos[0][2]){//Landing Gear 1
+		if( (yVal-pos[0][1]).toFixed(0) >= 0 && (yVal-pos[0][3]).toFixed(2) <= 0)
+		return true;
 	}
 	
+	if( xVal-pos[1][0] >= 0 && xVal-pos[1][2] <= 0){//Landing Gear 2
+		if( (yVal-pos[1][1]).toFixed(0) >= 0 && (yVal-pos[1][3]).toFixed(2) <= 0)
+		return true;
+	}	
 	
-	this.velx = this.accx;
-	this.vely = this.accy;
-	this.x += this.velx*dt;
-	this.y += this.vely*dt;	
+	return false;
+}
+
+Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VERIFIES IF THE LANDING GEAR IS TOUCHING THE LINE
+	var pos = this.landingGearPos;
+	//console.log(xVal1+ " "+yVal1+ " | "+xVal2+ " "+yVal1);
+	//console.log("-------------------------------------------------");
+	var vector = [xVal2-xVal1,yVal2-yVal1];//Direction vector of the line
+	var midPoint =  [
+					[pos[0][0]+(pos[0][2]-pos[0][0])/2,pos[0][1]+(pos[0][1]-pos[0][3])/2],
+					[pos[1][0]+(pos[1][2]-pos[1][0])/2,pos[0][1]+(pos[1][1]-pos[1][3])/2]
+					];//Middle point of each landing gear
+	//	To rerify we just put each midPoint x in the formation function of the line ( vector*t + a point of the line, in this case, xVal1,yVal1)
+	//and check to see if the Y is correct ( close enough, we accept +-1 point error margins)
+	//Also, we check if the point is betwen the barrier of the line;	
+	/*
+	console.log(vector[0] + "  "+ vector[1]);
+	console.log("X : "+midPoint[0][0] + " >= "+xVal1 + "   &&     " +midPoint[1][0] + " <= "+xVal2 + " == "+(midPoint[0][0]>=xVal1 && midPoint[1][0]<=xVal2));
+	console.log("xt : "+(midPoint[0][0]-xVal1)/vector[0]);
+	console.log("yt : "+(midPoint[0][1]-yVal1)/vector[1]);
+	console.log("-------------------------------------------------");
+	*/
+	if( (midPoint[0][0]>=xVal1 && midPoint[1][0]<=xVal2) /*&& (midPoint[0][1]>=yVal1 && midPoint[1][1]<=yVal2)*/ ){
+		//Landing Gear 1
+		var xT =0;
+		var yT =0;
+		if(vector[0]!=0)
+		 xT = (midPoint[0][0]-xVal1)/vector[0];
+	 
+		if(vector[1]!=0)	 
+		 yT = (midPoint[0][1]-yVal1)/vector[1];
+	 
+		if(vector[0]!=0 && vector[1]!=0){//Inclined Line
+			//console.log("Inclined Line");
+			if( Math.abs(xT-yT)<=this.collisionTolerance )
+				return true;		
+		}else if(vector[0]!=0){//Horizontal Line
+			//console.log("Horizontal Line");
+			if(Math.abs(midPoint[0][1] - yVal1)<=this.collisionTolerance  )
+				return true;
+		}else if(vector[0]!=0){//Vertical Line... The game do not have vertical landing, ignore
+		
+		}else{//The SOB gave us a point, return false as a lesson
+				return false;
+		}
+		
+		
+		//Landing Gear 2
+		if(vector[0]!=0)
+		 xT = (midPoint[1][0]-xVal1)/vector[0];
+	 
+		if(vector[1]!=0)	 
+		 yT = (midPoint[1][1]-yVal1)/vector[1];
+	 
+		if(vector[0]!=0 && vector[1]!=0){//Inclined Line
+			if( Math.abs(xT-yT)<=this.collisionTolerance )
+				return true;		
+		}else if(vector[0]!=0){//Horizontal Line
+			if(Math.abs(midPoint[1][1] - yVal1)<=this.collisionTolerance  )
+				return true;
+		}else if(vector[0]!=0){//Vertical Line... The game do not have vertical landing, ignore
+		
+		}else{//The SOB gave us a point, return false as a lesson
+				return false;
+		}
+	}
+	//console.log("-------------------------------------------------");
+	return false;
+}
+
+Sprite.prototype.move = function (dt){//COMPUTES THE ACCELERATION AND MOVES THE SHIP
+	this.accLimiter();
+	this.velx += this.accx*dt + this.accCounterX*dt + this.accGravityX*dt;
+	this.vely += this.accy*dt + this.accCounterY*dt + this.accGravityY*dt;
+	
+	this.frictionXA(dt);
+	this.frictionYA(dt);
+	
+	this.frictionXB(dt);
+	this.frictionYB(dt);
+	
+	if(Math.abs(this.velx) > 0 && Math.abs(this.velx) > 0.001)
+		this.x += this.velx;
+	else
+		this.velx =0;
+
+	if(Math.abs(this.vely) > 0 && Math.abs(this.vely) > 0.001)	
+		this.y += this.vely;	
+	else
+		this.vely =0;
+	
+	this.updateLandingGearPos();
 };

@@ -4,23 +4,48 @@
     <meta charset="utf-8">
     <title>Moonlander</title>
 	<script src="sprite.js" charset="utf-8">	</script>
+	<script src="bar.js" charset="utf-8">	</script>
   </head>
-  <body>
+  <body >
 	<canvas height=300 width=1200>
 		<script>
+			//Control Vars
 			var eCanvas = document.getElementsByTagName("Canvas")[0];
-			var ctx = eCanvas.getContext("2d");
-			var pos1 = {px:10,py:30,sx:40,sy:40};
-			
+			var ctx = eCanvas.getContext("2d");			
 			var dateActual = new Date();
 			var dateBefore = new Date();
-			
-			var blue = new Sprite();
-			blue.gravity = 10;
-			
 			var fps = 60;
 			var deltaTime = 1/fps;
 			
+			//Objects on the Scene
+			var blue = new Sprite();
+				blue.accGravityY = 0.5;
+				blue.vely=0;
+			var verticalThrusterFuel = new Bar();
+				verticalThrusterFuel.x = 10;
+				verticalThrusterFuel.y = 10;
+				verticalThrusterFuel.height = 10;
+				verticalThrusterFuel.width = 100;
+				verticalThrusterFuel.maxValue = 100;
+				verticalThrusterFuel.actualValue = 100;
+			var floorFields = new Array(2);
+				floorFields[0] = new Array(4);
+				floorFields[1] = new Array(4);
+				floorFields[0][0] = 0;
+				floorFields[0][1] = 250;
+				floorFields[0][2] = 1200;
+				floorFields[0][3] = 250;
+				floorFields[1][0] = 0;
+				floorFields[1][1] = 300;
+				floorFields[1][2] = 1200;
+				floorFields[1][3] = 300;
+				
+			
+			
+			//DEBUG VARS
+			var DEBUG = false;
+				
+			//START OF CODE
 			draw();
 			
 			function draw(){
@@ -30,52 +55,100 @@
 				deltaTime = (dateActual - dateBefore)/1000;
 				
 				cleanCanvas();
-				drawBoundryBox();
 				
 				ctx.fillStyle = "BLACK";
-				ctx.fillText("X: "+pos1.px,100,9);
-				ctx.fillText("DT: "+deltaTime+" ms",100,19);
-				ctx.fillText("FPS: "+1/deltaTime,100,29);
-				ctx.fillText("AccX: "+blue.accx,100,39);
-				ctx.fillText("AccY: "+blue.accy,100,49);
 				
-								
-				
-				blue.draw(ctx);
 				blue.move(deltaTime);
-				/*
-				pos1.px += 10*deltaTime;
-				ctx.fillStyle = "RED";
-				ctx.fillRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
-				ctx.strokeRect(pos1.px,pos1.py,pos1.sx,pos1.sy);
-				*/
+				blue.draw(ctx);
+				
+				//HUD
+				verticalThrusterFuel.draw(ctx);
+				ctx.fillText("AccX: "+(blue.accx+blue.accCounterX+blue.accGravityX).toFixed(4) +" VelX:"+blue.velx.toFixed(4),10,30);
+				ctx.fillText("AccY: "+-(blue.accy+blue.accCounterY+blue.accGravityY).toFixed(4) +" VelY:"+-blue.vely.toFixed(4),10,40);
+				
+				//LANDING LINE
+				ctx.strokeStyle = "PURPLE";	
+				ctx.lineWidth=1.5;
+					ctx.beginPath();
+						ctx.moveTo(floorFields[0][0],floorFields[0][1]);
+						ctx.lineTo(floorFields[0][2],floorFields[0][3]);
+					ctx.stroke();
+				ctx.lineWidth=1.0; 
+				ctx.fillStyle = "BLACK";
+				
+				//COLLISION
+				if(blue.touchLandingGearLine(floorFields[0][0],floorFields[0][1],floorFields[0][2],floorFields[0][3])){
+					console.log("COLLISION!");
+					blue.accGravityY = 0;
+					blue.accy = 0;					
+					blue.accCounterY = 0;	
+					blue.vely = 0;
+				}
+				
+				drawBoundryBox();
+				//DEBUG STUFF
+				if(DEBUG){
+					var DEBUGx = 200;
+					var DEBUGy = 9;
+					ctx.fillStyle = "BLACK";
+					ctx.fillText("Counter ACCX: "+blue.accCounterX.toFixed(4)+"  Counter ACCY: "+blue.accCounterY.toFixed(4)+
+					"  Gravity Y: "+blue.accGravityY.toFixed(4),DEBUGx,DEBUGy);
+					ctx.fillText("DT: "+deltaTime.toFixed(2)+" ms",DEBUGx,10+DEBUGy);
+					ctx.fillText("FPS: "+(1/deltaTime).toFixed(2),DEBUGx,20+DEBUGy);
+					ctx.fillText("AccX: "+(blue.accx+blue.accCounterX+blue.accGravityX).toFixed(4) +"  VelX:"+blue.velx.toFixed(4),DEBUGx,30+DEBUGy);
+					ctx.fillText("AccY: "+(blue.accy+blue.accCounterY+blue.accGravityY).toFixed(4) +"  VelY:"+blue.vely.toFixed(4),DEBUGx,40+DEBUGy);
+					ctx.fillText("X: "+blue.x.toFixed(2) +"  Y:"+blue.y.toFixed(2),DEBUGx,50+DEBUGy);
+					ctx.fillText(floorFields[0][0]+"  "+floorFields[0][1],DEBUGx,60+DEBUGy);
+					ctx.fillText(floorFields[0][2]+"  "+floorFields[0][3],DEBUGx,70+DEBUGy);
+					ctx.fillText(floorFields[1][0]+"  "+floorFields[1][1],DEBUGx,80+DEBUGy);
+					ctx.fillText(floorFields[1][2]+"  "+floorFields[1][3],DEBUGx,90+DEBUGy);
+					//console.log((1/deltaTime).toFixed(2));
+				}
 			}
 			
-			function drawBoundryBox(){			
+			function drawBoundryBox(){		
+				ctx.fillStyle = "black";
+				ctx.strokeStyle = "black";	
 				ctx.strokeRect(0,0,eCanvas.width-1,eCanvas.height-1);
 			}
-			
 			
 			function cleanCanvas(){
 				ctx.clearRect(0,0,eCanvas.width,eCanvas.height)
 			}
-			
+				
 			addEventListener("keydown", function(e){
-				console.log(e.keyCode);
+				//console.log("-------------------PRESSED-------------------");
+				//console.log(e.keyCode);
 				switch(e.keyCode){
 					case 37:{//left
-						blue.addXAcc(-100*deltaTime);
+						//blue.accx +=-20*deltaTime;
+						blue.addACCX(-20*deltaTime);
+						blue.leftMoveActivated = true;
 					}break;
 					case 38:{//Up
-						blue.addYAcc(-100*deltaTime);
+						//blue.accy +=-20*deltaTime;
+						if(verticalThrusterFuel.actualValue>0){
+							blue.addACCY(-20*deltaTime);
+							blue.upMoveActivated = true;
+							verticalThrusterFuel.actualValue -= 10*deltaTime;
+							if(verticalThrusterFuel.actualValue<0)
+								verticalThrusterFuel.actualValue =0;
+						}
 					}break;
 					
 					case 39:{//Right
-						blue.addXAcc(100*deltaTime);
+						//blue.accx +=20*deltaTime;
+						blue.addACCX(20*deltaTime);
+						blue.rightMoveActivated = true;
 					}break;
 					
 					case 40:{//Down
-						blue.addYAcc(100*deltaTime);
+						//blue.accy +=20*deltaTime;
+						//blue.addACCY(20*deltaTime);
+						//blue.downMoveActivated = true;
+					}break;
+					case 112:{//F1
+						DEBUG=!DEBUG;
 					}break;
 				}
 			});
@@ -83,22 +156,22 @@
 				//console.log(e.keyCode);
 				switch(e.keyCode){
 					case 37:{//left
-				
+						blue.leftMoveActivated = false;
 					}break;
-					case 38:{//Right
-				
+					case 38:{//uP
+						blue.upMoveActivated = false;
 					}break;
 					
-					case 39:{//Up
-				
+					case 39:{//right
+						blue.rightMoveActivated = false;
 					}break;
 					
 					case 40:{//Down
-				
+						blue.downMoveActivated = false;
 					}break;
 				}
 			});
-			
+
 		</script>
 	</canvas>
   </body>
