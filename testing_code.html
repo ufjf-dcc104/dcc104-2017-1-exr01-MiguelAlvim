@@ -5,6 +5,7 @@
     <title>Moonlander</title>
 	<script src="sprite.js" charset="utf-8">	</script>
 	<script src="bar.js" charset="utf-8">	</script>
+	<script src="imgLoader.js" charset="utf-8">	</script>
   </head>
   <body >
 	<canvas height=300 width=1200>
@@ -20,6 +21,10 @@
 			var gameON = true;
 			var gameFinished = false;
 			var score = 0;
+			
+			var imgs = new ImgLoader();
+			
+			imgs.addImg("img/spaceshipset32x32/player_ship.png","ship01")
 			
 			//Objects on the Scene
 			var blue = new Sprite();
@@ -66,7 +71,9 @@
 				deltaTime = (dateActual - dateBefore)/1000;
 				
 				cleanCanvas();
-								
+				
+				ctx.drawImage(imgs.images["ship01"],100,100);
+				
 				ctx.fillStyle = "BLACK";
 				if(gameON){
 					//SHIP DRAWN AND MOVE

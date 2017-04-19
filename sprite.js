@@ -1,14 +1,20 @@
 function Sprite(){
 	//Bulding/Initial Variables
-	this.x = 600;
-	this.y = 100;
+	this.x = 0;
+	this.y = 0;
+	this.w = 0;
+	this.h = 0;
+	this.angle = 0;//0 - 360
 	this.color = "blue";
 	
 	//Movement Variables
+	this.turnSpeed = 0;
+	this.turnAcc = 0;
 	this.velx = 0;	
 	this.vely = 0;	
 	this.accx = 0;
 	this.accy = 0;
+	this.accAng = 0;
 	this.stopVelX = 5;
 	this.stopVelY = 5;
 	this.maxVel = 8;//Hard Coded maximum vel, Higher values will make collision detection imprecise. To fix, modify collision detection to also work with 2 time instances and verify if collision line was passed between them. I haven't done it as I didn't feel necessary
@@ -37,6 +43,7 @@ function Sprite(){
 		So, if you want a 10 pixels/sec acceleration, you need to make the acelleration calls on the main program around 2x as big, so instead of 10 you call 30
 	and expect a delay of 1 seccond for the expected results.
 */
+
 Sprite.prototype.addACCX = function (val){//ADDS THE VALUE TO accx
 	this.accx +=val;
 }
@@ -45,91 +52,103 @@ Sprite.prototype.addACCY = function (val){//ADDS THE VALUE TO accy
 	this.accy +=val;
 }
 
+Sprite.prototype.draw2 = function (ctx){//HAS TRANSLATE; WE CAN ROTATE AND STUFF
+	ctx.save();
+		ctx.translate(this.x,this.y);
+		ctx.fillRect(-this.w/2,-this.h/2,this.h,this.w);//use the height and width to create, just like in OPENGL
+		ctx.rotate(this.angle*Math.PI*2/180)//How to rotate, like in OPENGL
+	ctx.restore()
+};
+
 Sprite.prototype.draw = function (ctx){//ALL THE DRAWING CALLS TO CREATE THE SHIP
 	//CREATING THE PROPULSION EFFECTS - THEY COME FIRST SO THAT THE SHIP IS DRAWN ABOVE THEM
 		//LATERAL THRUSTERS
-	if(this.leftMoveActivated){
-		//var grad = ctx.createLinearGradient(this.x+20,this.y+5,this.x+100,this.y+5);
-		//var grad = ctx.createRadialGradient(this.x+16,this.y+5,1,this.x+40,this.y+50,6);
-		var grad = ctx.createRadialGradient(this.x-86,this.y+10,1,this.x+10,this.y+30,100);
-		grad.addColorStop(0,"black");
-		grad.addColorStop(1,"white");
-		ctx.fillStyle = grad;
+	ctx.save();
+		ctx.translate(this.x,this.y);
+		ctx.rotate(this.angle*Math.PI*2/180);
+		if(this.leftMoveActivated){
+			//var grad = ctx.createLinearGradient(-this.w/2+20,-this.h/2+5,-this.w/2+100,-this.h/2+5);
+			//var grad = ctx.createRadialGradient(-this.w/2+16,-this.h/2+5,1,-this.w/2+40,-this.h/2+50,6);
+			var grad = ctx.createRadialGradient(-this.w/2-86,-this.h/2+10,1,-this.w/2+10,-this.h/2+30,100);
+			grad.addColorStop(0,"black");
+			grad.addColorStop(1,"white");
+			ctx.fillStyle = grad;
+			ctx.beginPath();
+				ctx.arc(-this.w/2+15,-this.h/2+10,4,1.5*Math.PI,0.5*Math.PI);
+			ctx.fill();
+		}	
+		if(this.rightMoveActivated){
+			var grad = ctx.createRadialGradient(-this.w/2+86,-this.h/2+10,1,-this.w/2-10,-this.h/2+30,100);
+			grad.addColorStop(0,"black");
+			grad.addColorStop(1,"white");
+			ctx.fillStyle = grad;
+			ctx.beginPath();
+				ctx.arc(-this.w/2,-this.h/2+10,4,0.5*Math.PI,1.5*Math.PI);
+			ctx.fill();
+		}	
+			//MAIN VERTICAL THRUSTER
+		if(this.upMoveActivated){
+			var grad = ctx.createLinearGradient(-this.w/2+4,-this.h/2+30,-this.w/2+4,-this.h/2+41);
+			//var grad = ctx.createRadialGradient(-this.w/2+7,-this.h/2+30,2,-this.w/2+12,-this.h/2+41,6);
+			grad.addColorStop(0,"red");
+			grad.addColorStop(0.5,"orange");
+			grad.addColorStop(1,"white");
+			ctx.fillStyle = grad;
+			ctx.fillRect(-this.w/2+4,-this.h/2+30,7,8);
+		}
+		
+		//CREATING THE MAIN SHAPE OF THE SHIP
+			//Main body
+		ctx.fillStyle = this.color;
+		ctx.strokeStyle = "black";
+		ctx.fillRect(-this.w/2,-this.h/2,15,30);
+		ctx.strokeRect(-this.w/2,-this.h/2,15,30);
+		
+			//Main thruster
 		ctx.beginPath();
-			ctx.arc(this.x+15,this.y+10,4,1.5*Math.PI,0.5*Math.PI);
+			ctx.moveTo(-this.w/2,-this.h/2+30);
+			ctx.lineTo(-this.w/2+5,-this.h/2+30);
+			ctx.lineTo(-this.w/2+5,-this.h/2+30+5);
+			ctx.lineTo(-this.w/2,-this.h/2+30);
 		ctx.fill();
-	}	
-	if(this.rightMoveActivated){
-		var grad = ctx.createRadialGradient(this.x+86,this.y+10,1,this.x-10,this.y+30,100);
-		grad.addColorStop(0,"black");
-		grad.addColorStop(1,"white");
-		ctx.fillStyle = grad;
-		ctx.beginPath();
-			ctx.arc(this.x,this.y+10,4,0.5*Math.PI,1.5*Math.PI);
-		ctx.fill();
-	}	
-		//MAIN VERTICAL THRUSTER
-	if(this.upMoveActivated){
-		var grad = ctx.createLinearGradient(this.x+4,this.y+30,this.x+4,this.y+41);
-		//var grad = ctx.createRadialGradient(this.x+7,this.y+30,2,this.x+12,this.y+41,6);
-		grad.addColorStop(0,"red");
-		grad.addColorStop(0.5,"orange");
-		grad.addColorStop(1,"white");
-		ctx.fillStyle = grad;
-		ctx.fillRect(this.x+4,this.y+30,7,8);
-	}
-	
-	//CREATING THE MAIN SHAPE OF THE SHIP
-		//Main body
-	ctx.fillStyle = this.color;
-	ctx.strokeStyle = "black";
-	ctx.fillRect(this.x,this.y,15,30);
-	ctx.strokeRect(this.x,this.y,15,30);
-	
-		//Main thruster
-	ctx.beginPath();
-		ctx.moveTo(this.x,this.y+30);
-		ctx.lineTo(this.x+5,this.y+30);
-		ctx.lineTo(this.x+5,this.y+30+5);
-		ctx.lineTo(this.x,this.y+30);
-	ctx.fill();
-	ctx.stroke(); 
-	
-	ctx.beginPath();
-		ctx.moveTo(this.x+15,this.y+30);
-		ctx.lineTo(this.x+10,this.y+35);
-		ctx.lineTo(this.x+10,this.y+30);
-		ctx.lineTo(this.x+15,this.y+30);
-	ctx.fill();
-	ctx.stroke(); 
-	
-		//Landing Gear
-	ctx.lineWidth=1.5;
-		ctx.beginPath();
-			ctx.moveTo(this.x,this.y+20);
-			ctx.lineTo(this.x-5,this.y+30);
-			ctx.lineTo(this.x-5,this.y+36);
-			ctx.lineTo(this.x-7,this.y+36);
-			ctx.lineTo(this.x-3,this.y+36);
 		ctx.stroke(); 
 		
 		ctx.beginPath();
-			ctx.moveTo(this.x+15,this.y+20);
-			ctx.lineTo(this.x+20,this.y+30);
-			ctx.lineTo(this.x+20,this.y+36);
-			ctx.lineTo(this.x+22,this.y+36);
-			ctx.lineTo(this.x+17,this.y+36);
+			ctx.moveTo(-this.w/2+15,-this.h/2+30);
+			ctx.lineTo(-this.w/2+10,-this.h/2+35);
+			ctx.lineTo(-this.w/2+10,-this.h/2+30);
+			ctx.lineTo(-this.w/2+15,-this.h/2+30);
+		ctx.fill();
 		ctx.stroke(); 
-	ctx.lineWidth=1;
-	
-		//Control Module
-	ctx.beginPath();
-		ctx.moveTo(this.x,this.y);
-		ctx.lineTo(this.x+7.5,this.y-8);
-		ctx.lineTo(this.x+15,this.y);
-		ctx.lineTo(this.x,this.y);
-	ctx.fill();
-	ctx.stroke(); 	
+		
+			//Landing Gear
+		ctx.lineWidth=1.5;
+			ctx.beginPath();
+				ctx.moveTo(-this.w/2,-this.h/2+20);
+				ctx.lineTo(-this.w/2-5,-this.h/2+30);
+				ctx.lineTo(-this.w/2-5,-this.h/2+36);
+				ctx.lineTo(-this.w/2-7,-this.h/2+36);
+				ctx.lineTo(-this.w/2-3,-this.h/2+36);
+			ctx.stroke(); 
+			
+			ctx.beginPath();
+				ctx.moveTo(-this.w/2+15,-this.h/2+20);
+				ctx.lineTo(-this.w/2+20,-this.h/2+30);
+				ctx.lineTo(-this.w/2+20,-this.h/2+36);
+				ctx.lineTo(-this.w/2+22,-this.h/2+36);
+				ctx.lineTo(-this.w/2+17,-this.h/2+36);
+			ctx.stroke(); 
+		ctx.lineWidth=1;
+		
+			//Control Module
+		ctx.beginPath();
+			ctx.moveTo(-this.w/2,-this.h/2);
+			ctx.lineTo(-this.w/2+7.5,-this.h/2-8);
+			ctx.lineTo(-this.w/2+15,-this.h/2);
+			ctx.lineTo(-this.w/2,-this.h/2);
+		ctx.fill();
+		ctx.stroke(); 	
+	ctx.restore()
 };
 
 Sprite.prototype.accLimiter = function (){//KEEPS THE ACCELERATION CREATED BY PLAYERS AND FRICTION IN THE LIMIT
@@ -242,8 +261,6 @@ Sprite.prototype.touchLandingGearPoint = function (xVal,yVal){//VERIFIES IF POIN
 
 Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VERIFIES IF THE LANDING GEAR IS TOUCHING THE LINE
 	var pos = this.landingGearPos;
-	//console.log(xVal1+ " "+yVal1+ " | "+xVal2+ " "+yVal1);
-	//console.log("-------------------------------------------------");
 	var vector = [xVal2-xVal1,yVal2-yVal1];//Direction vector of the line
 	var midPoint =  [
 					[pos[0][0]+(pos[0][2]-pos[0][0])/2,pos[0][1]+(pos[0][1]-pos[0][3])/2],
@@ -253,12 +270,10 @@ Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VER
 	//and check to see if the Y is correct ( close enough, we accept +-1 point error margins)
 	//Also, we check if the point is betwen the barrier of the line;	
 	/*
-	console.log(vector[0] + "  "+ vector[1]);
-	console.log("X : "+midPoint[0][0] + " >= "+xVal1 + "   &&     " +midPoint[1][0] + " <= "+xVal2 + " == "+(midPoint[0][0]>=xVal1 && midPoint[1][0]<=xVal2));
 	console.log("xt : "+(midPoint[0][0]-xVal1)/vector[0]);
 	console.log("yt : "+(midPoint[0][1]-yVal1)/vector[1]);
 	console.log("-------------------------------------------------");
-	*/
+	/**/
 	if( (midPoint[0][0]>=xVal1 && midPoint[1][0]<=xVal2) /*&& (midPoint[0][1]>=yVal1 && midPoint[1][1]<=yVal2)*/ ){
 		//Landing Gear 1
 		var xT =0;
@@ -271,7 +286,7 @@ Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VER
 	 
 		if(vector[0]!=0 && vector[1]!=0){//Inclined Line
 			//console.log("Inclined Line");
-			if( Math.abs(xT-yT)<=this.collisionTolerance )
+			if( Math.abs(xT-yT)<=0.01 )
 				return true;		
 		}else if(vector[0]!=0){//Horizontal Line
 			//console.log("Horizontal Line");
@@ -292,7 +307,7 @@ Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VER
 		 yT = (midPoint[1][1]-yVal1)/vector[1];
 	 
 		if(vector[0]!=0 && vector[1]!=0){//Inclined Line
-			if( Math.abs(xT-yT)<=this.collisionTolerance )
+			if( Math.abs(xT-yT)<=0.01 )
 				return true;		
 		}else if(vector[0]!=0){//Horizontal Line
 			if(Math.abs(midPoint[1][1] - yVal1)<=this.collisionTolerance  )
@@ -309,6 +324,11 @@ Sprite.prototype.touchLandingGearLine = function (xVal1,yVal1,xVal2,yVal2){//VER
 
 Sprite.prototype.move = function (dt){//COMPUTES THE ACCELERATION AND MOVES THE SHIP
 	this.accLimiter();
+	
+	//DEFAULT DIRECTION [0,1] - Original Angle of rotation is 0, but the ship is looking at 270º clockwise
+	//this.accy += this.accAng*Math.sin(this.angle+1.5*Math.PI);
+	//this.accx += this.accAng*Math.cos(this.angle+1.5*Math.PI);
+	
 	this.velx += this.accx*dt + this.accCounterX*dt + this.accGravityX*dt;
 	this.vely += this.accy*dt + this.accCounterY*dt + this.accGravityY*dt;
 	
