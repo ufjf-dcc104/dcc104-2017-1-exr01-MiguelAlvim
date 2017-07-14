@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>SquareForm</title>
+		<script src="sprite_box.js" charset="utf-8"></script>
+		<script src="gridMap_mod.js" charset="utf-8"></script>
+		<script src="bar.js" charset="utf-8"></script>
+		<script src="GameSetup.js" charset="utf-8"></script>
+		<script src="audioLoader.js" charset="utf-8"></script>
+	</head>
+	<body>
+		<canvas>
+			<script>
+			//Sound Control Variables
+			var sounds = new AudioLoader(30);
+				sounds.load("bgmusic_ms","audio/Music/Space Atmosphere.mp3");
+				sounds.load("thruster_se","audio/SoundEffects/Spaceship Engine Low ch4.wav");
+				sounds.load("collision_se","audio/SoundEffects/stone tablet collect c2.wav");
+			var bg_musicTimer = 0;
+			var thruster_musicTimer = 0;
+			var thruster_handler;
+			
+			//Timer
+			var ttime =0;
+			
+			//Level Vars
+			var gameOver = false;
+			var levelComplete = 0;
+			var par = 20;//Par time
+			var score =0;
+			var levelTransitionTime = 5;
+			var currentMap;
+			
+			setupGame(document.getElementsByTagName("Canvas")[0]);
+			setCanvasSize(eCanvas);
+			var Map1 = new GridMap();
+	     		Map1.w = eCanvas.width-1;
+		    	Map1.h = eCanvas.height-1;
+				Map1.setColorCode(0,"Black");
+				Map1.setColorCode(1,"GREY");
+				Map1.setColorCode(2,"rgb(82, 82, 82)");
+				Map1.setColorCode(3,"rgb(139,69,19)");
+				Map1.drawSeparation = false;
+			Map1.setCellsValue([	
+			[0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
+			[0,2,2,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0],
+			[0,2,2,2,0,0,2,2,0,0,0,2,0,0,0,0,0,0,0,0],
+			[2,2,0,0,0,0,2,0,0,0,0,0,2,2,0,0,0,0,0,0],
+			[2,0,0,0,0,0,2,0,0,0,0,0,0,2,2,0,0,0,0,0],
+			[0,0,0,0,0,2,2,0,2,0,0,0,0,0,2,2,2,0,0,0],
+			[0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0],
+			[0,2,2,0,0,2,0,0,2,2,2,2,0,2,2,2,2,2,0,0],
+			[0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0],
+			[0,0,2,0,0,2,0,0,2,0,0,0,0,0,0,0,0,2,0,0],
+			[0,0,2,2,0,2,0,0,0,0,0,0,0,2,0,0,0,2,0,0],
+			[0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,2,0,0],
+			[2,2,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2],
+			[0,0,2,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,2],
+			[0,0,2,0,0,0,0,2,2,0,0,2,0,0,0,0,0,2,0,2],
+			[0,0,2,0,0,2,2,2,2,2,0,2,0,0,0,0,2,0,0,2],
+			[0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,2,2,0,0,2],
+			[0,0,0,0,2,2,2,2,2,2,0,0,1,1,1,2,2,3,3,2]			
+			]);
+			Map1.drawW = Map1.h/Map1.map.length;
+			Map1.drawH = Map1.h/Map1.map.length;
+			Map1.fullDraw = true;
+			currentMap = Map1;
+			objects.push(Map1);
+
+			var Map2 = new GridMap();
+	     		Map2.w = eCanvas.width-1;
+		    	Map2.h = eCanvas.height-1;
+				Map2.setColorCode(0,"Black");
+				Map2.setColorCode(1,"GREY");
+				Map2.setColorCode(2,"rgb(82, 82, 82)");
+				Map2.setColorCode(3,"rgb(139,69,19)");
+				Map2.drawSeparation = false;
+			Map2.setCellsValue([	
+			[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+			[2,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2],
+			[2,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,2,2,2,2],
+			[2,2,2,0,2,2,0,0,2,2,2,2,2,0,0,0,0,0,2,0,2,2,0,0,0,2,2,2,2,2],
+			[2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,2,0,2,0,0,0,0,0,2,0,2,0,2],
+			[2,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,2,0,0,0,0,0,0,0,2,2,2,0,2,2],
+			[2,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,2,2],
+			[2,0,2,0,0,2,2,2,2,0,2,0,0,0,0,0,2,0,0,0,0,2,0,0,0,0,0,2,2,2],
+			[2,2,2,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,2,0,2,0,0,0,0,2,2],
+			[2,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2],
+			[2,0,0,0,0,2,2,0,0,2,2,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,2],
+			[2,0,0,2,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,2],
+			[2,0,0,2,0,0,0,0,0,0,2,0,0,0,0,2,0,0,0,0,0,0,0,2,2,0,2,2,0,2],
+			[2,0,0,2,0,0,2,2,0,0,2,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+			[2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,2,0,0,0,2,0,0,2],
+			[2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,2,0,0,2],
+			[2,0,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,2,0,0,0,0,0,0,2,2,2],
+			[2,0,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,2],
+			[2,0,2,2,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,2,0,0,2,0,2,0,2],
+			[2,0,0,0,2,0,0,0,0,0,0,0,0,0,2,2,2,2,0,2,0,2,0,0,0,0,0,2,0,2],
+			[2,0,0,0,2,0,2,2,0,0,0,0,2,0,0,0,0,0,0,2,0,0,2,0,0,2,0,0,0,2],
+			[2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,2,0,0,0,0,2,0,0,0,2],
+			[2,0,0,2,0,0,2,2,0,0,2,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,2,2],
+			[2,0,2,0,0,0,0,0,0,0,2,2,0,0,2,0,0,0,0,2,0,0,2,0,0,0,0,2,2,2],
+			[2,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,2,0,0,2,2,2,0,0,2,2,2],
+			[2,0,2,0,0,2,2,0,0,0,0,0,2,0,2,0,0,0,0,2,0,2,2,0,0,0,2,2,2,2],
+			[2,0,2,0,0,0,2,0,0,2,2,0,0,0,2,1,1,2,0,2,0,2,0,2,0,2,2,2,2,2],
+			[2,0,2,0,0,0,2,2,0,0,2,0,0,0,2,2,2,2,2,2,0,0,0,2,0,2,2,2,2,2],
+			[2,0,2,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,0,0,0,2,0,0,0,2,2,2,2,2],
+			[2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2,2,3,3,3,2,2,2,2,2,2,2,2,2]		
+			]);
+			Map2.drawW = Map2.h/Map2.map.length;
+			Map2.drawH = Map2.h/Map2.map.length;
+			Map2.fullDraw = true;
+			
+			var cellCodes = [1,2,3];
+			
+			function starSky(m){
+				this.stars = new Array();
+				for(var i =0;i<500;i++){
+					var star = {x:Math.floor(Math.random() * eCanvas.width),y:Math.floor(Math.random() * eCanvas.height)};
+					var cell = m.getCellByXY(star.x,star.y);
+					if(cell.col >=0 && cell.row >=0)
+					if(m.getCellValue(cell.row,cell.col)==0)
+						this.stars.push(star);
+				}
+				this.draw = function(ctx){
+					for(var i=0;i<this.stars.length;i++){
+						ctx.save();
+							ctx.translate(this.stars[i].x,this.stars[i].y);
+							ctx.fillStyle = "white";
+							ctx.fillRect(-1,-1,1,1);
+						ctx.restore();
+					}
+				}
+			};
+			var stars = new starSky(currentMap);
+			objects.push(stars);
+			
+			var fuelBar = new Bar();
+				fuelBar.x = eCanvas.width*0.01;
+				fuelBar.y = eCanvas.height*0.01;
+				fuelBar.color = "green";
+				fuelBar.height = eCanvas.height*0.01;
+				fuelBar.width = eCanvas.width*0.3;
+				fuelBar.orientation =0;//0 = Horizontal, else = Vertical; used to know the direction to deplete the bar
+				fuelBar.maxValue=100;
+				fuelBar.actualValue=100;
+				fuelBar.writeTotal=false;
+			objects.push(fuelBar);
+			var healthBar = new Bar();
+				healthBar.x = eCanvas.width*0.01;
+				healthBar.y = eCanvas.height*0.03;
+				healthBar.color = "red";
+				healthBar.height = eCanvas.height*0.01;
+				healthBar.width = eCanvas.width*0.3;
+				healthBar.orientation =0;//0 = Horizontal, else = Vertical; used to know the direction to deplete the bar
+				healthBar.maxValue=100;
+				healthBar.actualValue=100;
+				healthBar.writeTotal=false;
+			objects.push(healthBar);
+			
+			var ship = new Sprite();
+				ship.jetOn = false;
+				ship.goalLanding = 0;
+				ship.color = "yellow";
+				ship.w = currentMap.drawW/4;
+				ship.h = currentMap.drawH/2;
+				ship.x = currentMap.getXYByCell(1,6).mx*1.1;
+				ship.y = currentMap.getXYByCell(1,6).my*1.7;
+				ship.accNaturalLimit = 2;
+				ship.stopVelX = 9.5;
+				ship.stopVelY = 9;		
+				ship.calculateCollisionPoints();
+				ship.accGravityY =1;
+				ship.mainMove = ship.move;
+				ship.move = function(dt){
+					this.mainMove(dt);
+					//Collision with MAP
+					var verticalDir = -1;
+					if(this.vely>0){
+						verticalDir = 3;
+					}else if(this.vely<0){
+						verticalDir = 7;
+					}
+					var adjustedCoodsGuy = {};
+						adjustedCoodsGuy.x=this.x;
+						adjustedCoodsGuy.y=this.y;
+						adjustedCoodsGuy.velx=this.velx;
+						adjustedCoodsGuy.vely=this.vely;
+						adjustedCoodsGuy.w=this.w;
+						adjustedCoodsGuy.h=this.h;
+					if(currentMap.collisionInDirection(adjustedCoodsGuy,cellCodes,verticalDir)){//Gravity Collision
+						if(Math.max(0,Math.abs(this.vely)*10 - 5 )>0){
+							healthBar.actualValue -=Math.max(0,Math.abs(this.vely)*20 - 5 );
+							sounds.play("collision_se",0.8);
+						}
+						if(verticalDir == 3){
+							var tCell = currentMap.getCellByXY(this.x,this.y+currentMap.drawH/2);
+							var vCell = currentMap.getCellValue(tCell.row,tCell.col);
+							if(vCell == 1){
+								this.goalLanding =1;
+							}else if(vCell == 3){
+								this.goalLanding =3;
+							}
+						}
+						this.y=this.y-this.vely;
+						this.vely=0;
+					}
+					var horizontaldir = -1;
+					if(this.velx>0){
+						horizontaldir = 1;
+					}else if(this.velx<0){
+						horizontaldir = 5;
+					}
+					if(horizontaldir !=-1 && currentMap.collisionInDirection(adjustedCoodsGuy,cellCodes,horizontaldir)){//Lateral Collision
+						if(Math.max(0,Math.abs(this.velx)*4 - 5 )>0){
+							healthBar.actualValue -=Math.max(0,Math.abs(this.velx)*4 - 5 );
+							sounds.play("collision_se",0.8);
+						}
+						this.x=this.x-this.velx;
+						this.velx=0;
+					}
+				}
+			objects.push(ship);
+			var keyDownW = function(thi){//Use Jet
+					if(fuelBar.actualValue>0){
+						thi[0].jetOn = true;
+						thi[0].accy -= 50*deltaTime;
+						fuelBar.actualValue -= 5*deltaTime;
+					}
+				};
+			var keyUpW = function(thi){//Stop Jet
+					thi[0].jetOn = false;
+				};
+			var keyDownA = function(thi){thi[0].accx -= 20*deltaTime;};
+			var keyDownD = function(thi){thi[0].accx += 20*deltaTime;};
+				setKeyFunction(87,'keydown',keyDownW,new Array(ship));
+				setKeyFunction(87,'keyup',keyUpW,new Array(ship));
+				setKeyFunction(65,'keydown',keyDownA,new Array(ship));//Move Left
+				setKeyFunction(68,'keydown',keyDownD,new Array(ship));//Move Right
+			
+			function HUD(g){
+				this.gg = g;
+				this.draw = function (ctx){	
+					ctx.font= eCanvas.width*0.033+"px Arial";
+					ctx.fillStyle = "GREEN";
+					ctx.fillText("Vel: "+(this.gg.vely).toFixed(3)*(-1),eCanvas.width*0.01,eCanvas.height*0.07);
+					ctx.fillText("Time: "+(ttime).toFixed(1)+"s /"+par,eCanvas.width*0.01,eCanvas.height*0.1);
+					ctx.fillText("Score: "+(score).toFixed(0),eCanvas.width*0.01,eCanvas.height*0.13);
+					if(gameOver){
+					ctx.font=eCanvas.width*0.1+"px Arial";
+					ctx.fillStyle = "WHITE";
+						ctx.fillText("Game Over",eCanvas.width/4,eCanvas.height/2);	
+					}else if(levelComplete!=0){
+					ctx.font=eCanvas.width*0.04+"px Arial";
+					ctx.fillStyle = "WHITE";
+						ctx.fillText("Level Completed. You got "+score.toFixed(0)+" points",eCanvas.width/4,eCanvas.height/2);	
+						if(currentMap == Map1)
+							ctx.fillText("Next Level in: "+levelTransitionTime.toFixed(1)+"s",eCanvas.width/4,eCanvas.height/1.8);	
+						levelTransitionTime -= deltaTime;
+						if(levelTransitionTime<0 && currentMap != Map2){
+							objects.splice(loopFunctions.indexOf(currentMap),1);
+							objects.splice(loopFunctions.indexOf(ship),1);
+							objects.splice(loopFunctions.indexOf(stars),1);
+							objects.splice(loopFunctions.indexOf(hud),1);
+							objects.splice(loopFunctions.indexOf(healthBar),1);
+							objects.splice(loopFunctions.indexOf(fuelBar),1);
+							
+							stars = new starSky(Map2);
+							currentMap = Map2;
+							objects.push(Map2);
+							objects.push(stars);
+							ship.w = Map2.drawW/4;
+							ship.h = Map2.drawH/2;
+							ship.x = currentMap.getXYByCell(2,1).mx;
+							ship.y = currentMap.getXYByCell(2,1).my;
+							ship.goalLanding = 0;
+							objects.push(ship);
+							objects.push(hud);
+							objects.push(fuelBar);
+							objects.push(healthBar);
+							
+							healthBar.actualValue = 100;
+							healthBar.x = eCanvas.width*0.01;
+							healthBar.y = eCanvas.height*0.03;
+							healthBar.height = eCanvas.height*0.01;
+							healthBar.width = eCanvas.width*0.3;
+							
+							fuelBar.actualValue = 100;
+							fuelBar.x = eCanvas.width*0.01;
+							fuelBar.y = eCanvas.height*0.01;
+							fuelBar.height = eCanvas.height*0.01;
+							fuelBar.width = eCanvas.width*0.3;
+							
+							
+							
+							levelTransitionTime =5;
+							par = 35;
+							ttime = 0;
+							levelComplete = 0;
+							
+							
+							
+							setLoopFunction(gameEnder,new Array(ship));		
+							setKeyFunction(87,'keydown',keyDownW,new Array(ship));
+							setKeyFunction(87,'keyup',keyUpW,new Array(ship));
+							setKeyFunction(65,'keydown',keyDownA,new Array(ship));//Move Left
+							setKeyFunction(68,'keydown',keyDownD,new Array(ship));//Move Right
+						}
+					}
+				}
+			}
+			var hud = new HUD(ship);
+			objects.push(hud);
+			
+			setLoopFunction(function(){ttime+=deltaTime;},null);
+			var gameEnder = function(thi){//Checks for Game Overs & Level Complete States
+				//Game Over State
+				if(healthBar.actualValue <=0 || fuelBar.actualValue < 0){
+					keyFunctions.splice(loopFunctions.indexOf(keyDownW),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyUpW),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyDownA),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyDownD),1);
+					gameOver = true;
+				}else
+				//Level Complete State
+				if(thi[0].goalLanding !=0){
+					keyFunctions.splice(loopFunctions.indexOf(keyDownW),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyUpW),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyDownA),1);
+					keyFunctions.splice(loopFunctions.indexOf(keyDownD),1);
+					levelComplete = thi[0].goalLanding;					
+					score += (levelComplete*(healthBar.actualValue/2)+ par/ttime + fuelBar.actualValue)/1;
+					loopFunctions.splice(loopFunctions.indexOf(gameEnder),1);
+				}
+			};
+			setLoopFunction(gameEnder,new Array(ship));			
+			setLoopFunction(function(thi){//Indefinetly Plays the GB music
+				var now = new Date();
+				if(now.getTime() - bg_musicTimer > sounds.audios["bgmusic_ms"].duration*1000){
+					sounds.play("bgmusic_ms",0.3);
+					bg_musicTimer = new Date();
+				}
+				if(thi[0].jetOn && fuelBar.actualValue>0){
+					if(now.getTime() - thruster_musicTimer > sounds.audios["thruster_se"].duration*1000){
+						thruster_handler = sounds.play("thruster_se",0.5);
+						thruster_musicTimer = new Date();
+					}
+				}else if((typeof thruster_handler !== 'undefined' && now.getTime() - thruster_musicTimer <= sounds.audios["thruster_se"].duration*1000 )|| fuelBar.actualValue<=0){
+					thruster_handler.pause();
+					thruster_handler.end = now.getTime() + sounds.audios["thruster_se"].duration*1000;	
+					thruster_musicTimer = 0;
+				}
+			},new Array(ship));
+			mainLoop();
+			</script>
+		</canvas>
+	</body>
+</html>
